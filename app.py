@@ -4,7 +4,7 @@ import numpy as np
 
 app = Flask(__name__)
 
-# Load model
+# Load model safely
 def load_model(filename):
     with open(filename, 'rb') as file:
         model = pickle.load(file)
@@ -12,29 +12,45 @@ def load_model(filename):
 
 model = load_model('linear_regression_model.pkl')
 
-# Home route
 @app.route('/', methods=['GET', 'POST'])
 def index():
     prediction = None
+    error = None
+
     if request.method == 'POST':
         try:
-            # Extract input values from form
-            features = [
-                float(request.form.get('Open')),
-                float(request.form.get('High')),
-                float(request.form.get('Low')),
-                float(request.form.get('Adj_Close')),
-                float(request.form.get('Volume')),
-                float(request.form.get('SP_open')),
-                float(request.form.get('SP_high')),
-                float(request.form.get('SP_low')),
-                float(request.form.get('SP_close'))
-            ]
-            input_array = np.array(features).reshape(1, -1)
-            prediction = round(model.predict(input_array)[0], 2)
+            # Get input values from form
+            open_val = float(request.form['Open'])
+            high_val = float(request.form['High'])
+            low_val = float(request.form['Low'])
+            adj_close_val = float(request.form['Adj_Close'])
+            volume_val = float(request.form['Volume'])
+            sp_open_val = float(request.form['SP_open'])
+            sp_high_val = float(request.form['SP_high'])
+            sp_low_val = float(request.form['SP_low'])
+            sp_close_val = float(request.form['SP_close'])
+
+            # Arrange features
+            features = np.array([[
+                open_val,
+                high_val,
+                low_val,
+                adj_close_val,
+                volume_val,
+                sp_open_val,
+                sp_high_val,
+                sp_low_val,
+                sp_close_val
+            ]])
+
+            # Predict
+            result = model.predict(features)
+            prediction = round(float(result[0]), 2)
+
         except Exception as e:
-            prediction = f"Error: {str(e)}"
-    return render_template('index.html', prediction=prediction)
+            error = str(e)
+
+    return render_template('index.html', prediction=prediction, error=error)
 
 if __name__ == '__main__':
-    app.run(debug=True,host='0.0.0.0',port=5000)
+    app.run(host='0.0.0.0', port=5000)
